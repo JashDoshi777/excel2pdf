@@ -16,14 +16,13 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "google/gemini-2.0-flash-001"
 
 # --- ASSETS ---
-# 1. PUT YOUR IMAGE IN THE SAME FOLDER AS THIS SCRIPT
-# 2. RENAME IT TO "logo.png"
 LOCAL_LOGO_FILENAME = "logo.png"
 
-# Fallback (Black Abstract) only if local file is missing
+# Fallback (Black Abstract)
 FALLBACK_LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QwWESEX2j0ADAAAAxpJREFUaN7tmr9rFEEQxz97l0TiFyxEQVAQY2OVRmzEzsJCsLTGwkrEQv+FvY2Ilb+FlcU/QKy0sfASxZQBpZBCsBAkXOSSe5uFvbvbvb2527uT+MHA7M3MfnznZ2Z2duA/FhAAq8AasAFsA5vARrW+BawBa8Cq+u0BfWAIGAPGgTHgMzCufwd4r34/B46B00Z7G9W6C+wDO8AecBioA31Vf8vo78fV+yFwBrwFLoB3wFf1exx4a7S/U617wCFwGDgKHAZ2K4Mto1+f1fsJcAm8Bi6BT+r3FPAJeG20v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfnxN75z+I337vH5qk4QAAAABJRU5ErkJggg=="
 
-# --- HTML TEMPLATE (RESTORED ORIGINAL DESIGN) ---
+# --- HTML TEMPLATE ---
+# UPDATED: The <img> tag now uses {{ logo_path }} instead of base64 data
 html_template_string = """
 <!DOCTYPE html>
 <html>
@@ -57,7 +56,7 @@ html_template_string = """
         
         .main-title {
             font-size: 36px;
-            color: #2c3e50; /* Original Dark Blue */
+            color: #2c3e50; 
             margin-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -77,12 +76,10 @@ html_template_string = """
         
         h1.page-header { color: #2c3e50; font-size: 18px; margin: 0; padding-bottom: 5px; }
         
-        /* Original Orange Accents */
         h2 { color: #e67e22; font-size: 18px; margin-top: 30px; border-bottom: 1px solid #e67e22; padding-bottom: 5px; }
         
         table.data-table { width: 100%; border: 0.5px solid #ddd; margin-top: 10px; font-size: 11px; }
         
-        /* Original Blue Headers */
         th { background-color: #2c3e50; color: #ffffff; padding: 8px; text-align: left; font-weight: bold; }
         
         td { padding: 6px; border-bottom: 0.5px solid #ddd; vertical-align: top; }
@@ -92,7 +89,7 @@ html_template_string = """
 <body>
 
     <div class="title-page">
-        <img src="{{ logo_data }}" class="logo"/>
+        <img src="{{ logo_path }}" class="logo"/>
         <h1 class="main-title">{{ report_title }}</h1>
         <div class="sub-title">GENERATED REPORT | {{ date }}</div>
     </div>
@@ -135,41 +132,43 @@ html_template_string = """
 </html>
 """
 
-# --- HELPER: Read Local File & Convert to Base64 ---
-def get_local_logo_b64(filename):
-    if not os.path.exists(filename):
-        return None
-    try:
-        with open(filename, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode()
-        mime = "image/png"
-        if filename.lower().endswith(('.jpg', '.jpeg')):
-            mime = "image/jpeg"
-        return f"data:{mime};base64,{encoded_string}"
-    except Exception as e:
-        print(f"Error reading local logo: {e}")
-        return None
+# --- HELPER: Save Logo to Disk and Return PATH ---
+def get_logo_path(uploaded_file):
+    """
+    Saves the best available logo to a temporary file and returns the ABSOLUTE PATH.
+    xhtml2pdf prefers paths over base64 strings.
+    """
+    temp_filename = "temp_report_logo.png"
+    abs_path = os.path.abspath(temp_filename)
 
-def process_logo_logic(uploaded_file):
     # 1. User Upload (Priority)
     if uploaded_file is not None:
         try:
-            bytes_data = uploaded_file.getvalue()
-            base64_str = base64.b64encode(bytes_data).decode()
-            mime = "image/png"
-            if uploaded_file.name.lower().endswith(('jpg', 'jpeg')):
-                mime = "image/jpeg"
-            return f"data:{mime};base64,{base64_str}"
-        except Exception:
-            pass
-    
+            with open(abs_path, "wb") as f:
+                f.write(uploaded_file.getvalue())
+            return abs_path
+        except Exception as e:
+            print(f"Error saving uploaded logo: {e}")
+
     # 2. Local File (Preferred)
-    local_logo = get_local_logo_b64(LOCAL_LOGO_FILENAME)
-    if local_logo:
-        return local_logo
+    if os.path.exists(LOCAL_LOGO_FILENAME):
+        return os.path.abspath(LOCAL_LOGO_FILENAME)
         
-    # 3. Fallback
-    return FALLBACK_LOGO_B64
+    # 3. Fallback (Decode Base64 string to a file)
+    try:
+        # Split the header "data:image/png;base64," from the data
+        if "base64," in FALLBACK_LOGO_B64:
+            _, encoded = FALLBACK_LOGO_B64.split("base64,", 1)
+        else:
+            encoded = FALLBACK_LOGO_B64
+            
+        decoded_data = base64.b64decode(encoded)
+        with open(abs_path, "wb") as f:
+            f.write(decoded_data)
+        return abs_path
+    except Exception as e:
+        print(f"Error processing fallback logo: {e}")
+        return None
 
 # --- HELPER: Normalize Data ---
 def normalize_ai_output(data):
@@ -304,12 +303,14 @@ def get_ai_structure(excel_file, api_key):
         "tables": master_tables
     }
 
-def create_pdf(data_context, logo_b64):
-    data_context['logo_data'] = logo_b64
+def create_pdf(data_context, logo_path):
+    # Pass the FILE PATH, not the binary data
+    data_context['logo_path'] = logo_path 
     template = Template(html_template_string)
     html_content = template.render(**data_context)
     
     pdf_buffer = io.BytesIO()
+    # pisa.CreatePDF handles file paths better than base64 strings
     pisa_status = pisa.CreatePDF(io.StringIO(html_content), dest=pdf_buffer)
     
     if pisa_status.err:
@@ -367,7 +368,8 @@ if uploaded_file is not None:
                 uploaded_file.seek(0)
                 
                 with st.spinner("Processing Logo..."):
-                    final_logo = process_logo_logic(uploaded_logo)
+                    # Process logo to get a valid FILE PATH
+                    final_logo_path = get_logo_path(uploaded_logo)
                 
                 with st.spinner("AI is analyzing all sheets individually..."):
                     structured_data = get_ai_structure(uploaded_file, OPENROUTER_API_KEY)
@@ -383,7 +385,7 @@ if uploaded_file is not None:
                     st.json(structured_data)
                 else:
                     with st.spinner("Rendering Title Page & PDF..."):
-                        pdf_bytes = create_pdf(structured_data, final_logo)
+                        pdf_bytes = create_pdf(structured_data, final_logo_path)
                     
                     st.success("Report generated successfully!")
                     
@@ -399,3 +401,5 @@ if uploaded_file is not None:
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+                import traceback
+                st.code(traceback.format_exc())
