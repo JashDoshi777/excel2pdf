@@ -72,7 +72,7 @@ html_template_string = """
         
         h1.page-header { color: #2c3e50; font-size: 18px; margin: 0; padding-bottom: 5px; }
         
-        h2 { color: #e67e22; font-size: 18px; margin-top: 30px; border-bottom: 1px solid #e67e22; padding-bottom: 5px; }
+        h2 { color: #FF5C00; font-size: 18px; margin-top: 30px; border-bottom: 1px solid #FF5C00; padding-bottom: 5px; }
         
         table.data-table { width: 100%; border: 0.5px solid #ddd; margin-top: 10px; font-size: 11px; }
         
@@ -367,3 +367,4 @@ if uploaded_file is not None:
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
