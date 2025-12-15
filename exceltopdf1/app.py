@@ -310,9 +310,6 @@ st.markdown("Upload Excel, customize title, get a professional PDF.")
 with st.sidebar:
     st.header("Report Settings")
     
-    # Check for ENV key first, otherwise ask user
-    env_key = DEEPSEEK_API_KEY if DEEPSEEK_API_KEY else ""
-    api_key = st.text_input("DeepSeek API Key", value=env_key, type="password")
     
     st.markdown("---")
     st.subheader("Title Page Config")
@@ -382,3 +379,4 @@ if uploaded_file is not None:
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+
