@@ -9,11 +9,12 @@ import datetime
 import base64
 import os
 
-# --- CONFIGURATION ---
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# --- CONFIGURATION: DEEPSEEK ---
+# Try to get key from environment, otherwise None
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL_NAME = "google/gemini-2.0-flash-001"
+DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
+MODEL_NAME = "deepseek-chat" # Uses DeepSeek-V3
 
 # --- ASSETS ---
 LOCAL_LOGO_FILENAME = "logo.png"
@@ -22,7 +23,7 @@ LOCAL_LOGO_FILENAME = "logo.png"
 FALLBACK_LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QwWESEX2j0ADAAAAxpJREFUaN7tmr9rFEEQxz97l0TiFyxEQVAQY2OVRmzEzsJCsLTGwkrEQv+FvY2Ilb+FlcU/QKy0sfASxZQBpZBCsBAkXOSSe5uFvbvbvb2527uT+MHA7M3MfnznZ2Z2duA/FhAAq8AasAFsA5vARrW+BawBa8Cq+u0BfWAIGAPGgTHgMzCufwd4r34/B46B00Z7G9W6C+wDO8AecBioA31Vf8vo78fV+yFwBrwFLoB3wFf1exx4a7S/U617wCFwGDgKHAZ2K4Mto1+f1fsJcAm8Bi6BT+r3FPAJeG20v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfnxN75z+I337vH5qk4QAAAABJRU5ErkJggg=="
 
 # --- HTML TEMPLATE ---
-# UPDATED: The <img> tag now uses {{ logo_path }} instead of base64 data
+# Uses {{ logo_path }} for Render compatibility
 html_template_string = """
 <!DOCTYPE html>
 <html>
@@ -41,7 +42,6 @@ html_template_string = """
         }
         body { font-family: Helvetica; color: #333333; }
         
-        /* --- TITLE PAGE STYLES --- */
         .title-page {
             text-align: center;
             padding-top: 120px;
@@ -69,7 +69,6 @@ html_template_string = """
             text-transform: uppercase;
         }
         
-        /* --- REPORT CONTENT STYLES --- */
         table.header-layout { width: 100%; border-bottom: 2px solid #2c3e50; margin-bottom: 20px; }
         td.header-left { text-align: left; vertical-align: bottom; }
         td.header-right { text-align: right; vertical-align: bottom; color: #777; font-size: 10px; }
@@ -133,11 +132,8 @@ html_template_string = """
 """
 
 # --- HELPER: Save Logo to Disk and Return PATH ---
+# Replaced base64 logic with File Path logic for Render stability
 def get_logo_path(uploaded_file):
-    """
-    Saves the best available logo to a temporary file and returns the ABSOLUTE PATH.
-    xhtml2pdf prefers paths over base64 strings.
-    """
     temp_filename = "temp_report_logo.png"
     abs_path = os.path.abspath(temp_filename)
 
@@ -156,15 +152,12 @@ def get_logo_path(uploaded_file):
         
     # 3. Fallback (Decode Base64 string to a file)
     try:
-        # Split the header "data:image/png;base64," from the data
         if "base64," in FALLBACK_LOGO_B64:
             _, encoded = FALLBACK_LOGO_B64.split("base64,", 1)
         else:
             encoded = FALLBACK_LOGO_B64
-            
-        decoded_data = base64.b64decode(encoded)
         with open(abs_path, "wb") as f:
-            f.write(decoded_data)
+            f.write(base64.b64decode(encoded))
         return abs_path
     except Exception as e:
         print(f"Error processing fallback logo: {e}")
@@ -192,14 +185,12 @@ def normalize_ai_output(data):
         
         for row in raw_rows:
             if not isinstance(row, list): continue
-            
             str_row = [str(cell) if (cell is not None and str(cell).strip() != "") else " " for cell in row]
             
             if len(str_row) < col_count:
                 str_row += [" "] * (col_count - len(str_row))
             elif len(str_row) > col_count:
                 str_row = str_row[:col_count]
-                
             clean_rows.append(str_row)
         
         if clean_rows:
@@ -211,28 +202,22 @@ def normalize_ai_output(data):
     return data
 
 def get_ai_structure(excel_file, api_key):
-    # 1. Read all sheets
     all_sheets = pd.read_excel(excel_file, sheet_name=None, header=None)
     
     master_tables = []
     final_report_title = "Consolidated Report"
     final_report_date = ""
 
-    # UI Progress Bar
     progress_bar = st.progress(0)
     total_sheets = len(all_sheets)
     
-    # 2. LOOP through each sheet individually to avoid Token Limits
     for i, (sheet_name, df) in enumerate(all_sheets.items()):
         if df.empty: 
             continue
             
-        # Update progress
         progress_bar.progress((i + 1) / total_sheets)
-        
         csv_text = df.to_csv(index=False)
         
-        # Prompt for individual sheet
         prompt = f"""
         Analyze the raw Excel data for the sheet named "{sheet_name}".
         Format numbers with commas.
@@ -260,43 +245,41 @@ def get_ai_structure(excel_file, api_key):
         {csv_text}
         """
         
+        # DEEPSEEK HEADERS
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         
         data = {
-            "model": MODEL_NAME,
-            "messages": [{"role": "user", "content": prompt}]
+            "model": MODEL_NAME, # deepseek-chat
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False
         }
         
         try:
-            response = requests.post(OPENROUTER_URL, headers=headers, json=data)
+            # POST TO DEEPSEEK URL
+            response = requests.post(DEEPSEEK_URL, headers=headers, json=data)
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
                 clean_content = content.replace("```json", "").replace("```", "")
                 
-                # Parse JSON for this specific sheet
                 sheet_data = json.loads(clean_content)
-                
-                # Normalize and clean
                 safe_data = normalize_ai_output(sheet_data)
-                
-                # Add to Master List
                 master_tables.extend(safe_data.get("tables", []))
                 
-                # Capture date/title from the first valid sheet found
                 if not final_report_date and safe_data.get("date"):
                     final_report_date = safe_data["date"]
                 if final_report_title == "Consolidated Report" and safe_data.get("report_title"):
                     final_report_title = safe_data["report_title"]
+            else:
+                print(f"DeepSeek API Error: {response.status_code} - {response.text}")
                     
         except Exception as e:
             print(f"Skipping sheet {sheet_name} due to error: {e}")
             continue
 
-    # Return the combined result
     return {
         "report_title": final_report_title,
         "date": final_report_date,
@@ -304,13 +287,12 @@ def get_ai_structure(excel_file, api_key):
     }
 
 def create_pdf(data_context, logo_path):
-    # Pass the FILE PATH, not the binary data
-    data_context['logo_path'] = logo_path 
+    # Fixed: Using path instead of data for Render
+    data_context['logo_path'] = logo_path
     template = Template(html_template_string)
     html_content = template.render(**data_context)
     
     pdf_buffer = io.BytesIO()
-    # pisa.CreatePDF handles file paths better than base64 strings
     pisa_status = pisa.CreatePDF(io.StringIO(html_content), dest=pdf_buffer)
     
     if pisa_status.err:
@@ -322,15 +304,15 @@ def create_pdf(data_context, logo_path):
 # --- STREAMLIT UI ---
 st.set_page_config(page_title="Professional Report Generator", page_icon="📄")
 
-st.title("📄 AI Report Generator")
+st.title("📄 AI Report Generator (DeepSeek)")
 st.markdown("Upload Excel, customize title, get a professional PDF.")
 
 with st.sidebar:
     st.header("Report Settings")
-    if OPENROUTER_API_KEY:
-        st.success("✅ API key loaded from environment")
-    else:
-        st.error("❌ OPENROUTER_API_KEY not set")
+    
+    # Check for ENV key first, otherwise ask user
+    env_key = DEEPSEEK_API_KEY if DEEPSEEK_API_KEY else ""
+    api_key = st.text_input("DeepSeek API Key", value=env_key, type="password")
     
     st.markdown("---")
     st.subheader("Title Page Config")
@@ -360,20 +342,19 @@ if uploaded_file is not None:
         st.warning("Could not preview file.")
 
     if st.button("Generate Report", type="primary"):
-        if not OPENROUTER_API_KEY:
-            st.error("OpenRouter API key not found. Set it in Render Environment Variables.")
+        if not api_key:
+            st.error("Please enter a DeepSeek API Key.")
             st.stop()
         else:
             try:
                 uploaded_file.seek(0)
                 
                 with st.spinner("Processing Logo..."):
-                    # Process logo to get a valid FILE PATH
+                    # Use the file-path function for Render compatibility
                     final_logo_path = get_logo_path(uploaded_logo)
                 
                 with st.spinner("AI is analyzing all sheets individually..."):
-                    structured_data = get_ai_structure(uploaded_file, OPENROUTER_API_KEY)
-
+                    structured_data = get_ai_structure(uploaded_file, api_key)
                 
                 if custom_title:
                     structured_data["report_title"] = custom_title
@@ -401,6 +382,3 @@ if uploaded_file is not None:
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
-                import traceback
-                st.code(traceback.format_exc())
-
