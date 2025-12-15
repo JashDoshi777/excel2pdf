@@ -13,7 +13,7 @@ import os
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL_NAME = "google/gemma-3-4b-it:free"
+MODEL_NAME = "deepseek/deepseek-v3.2"
 
 # --- ASSETS ---
 LOCAL_LOGO_FILENAME = "logo.png"
@@ -403,4 +403,3 @@ if uploaded_file is not None:
                 st.error(f"An error occurred: {e}")
                 import traceback
                 st.code(traceback.format_exc())
-
