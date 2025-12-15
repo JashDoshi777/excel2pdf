@@ -9,21 +9,18 @@ import datetime
 import base64
 import os
 
-# --- CONFIGURATION: DEEPSEEK ---
-# Try to get key from environment, otherwise None
+# --- CONFIGURATION: DEEPSEEK (SECURE) ---
+# We fetch the key from the Render Environment Variables
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
-MODEL_NAME = "deepseek-chat" # Uses DeepSeek-V3
+MODEL_NAME = "deepseek-chat"
 
 # --- ASSETS ---
 LOCAL_LOGO_FILENAME = "logo.png"
-
-# Fallback (Black Abstract)
 FALLBACK_LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QwWESEX2j0ADAAAAxpJREFUaN7tmr9rFEEQxz97l0TiFyxEQVAQY2OVRmzEzsJCsLTGwkrEQv+FvY2Ilb+FlcU/QKy0sfASxZQBpZBCsBAkXOSSe5uFvbvbvb2527uT+MHA7M3MfnznZ2Z2duA/FhAAq8AasAFsA5vARrW+BawBa8Cq+u0BfWAIGAPGgTHgMzCufwd4r34/B46B00Z7G9W6C+wDO8AecBioA31Vf8vo78fV+yFwBrwFLoB3wFf1exx4a7S/U617wCFwGDgKHAZ2K4Mto1+f1fsJcAm8Bi6BT+r3FPAJeG20v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfn9X7CXAJvAYugU/q9xTwCXhttL9TrXvAIXAYOAocBnYrgy2jX5/V+wlwybH3CngDnAevgA/q9wTw0Wh/p1r3gEPgMHAUOAzz7J0C7402d6p1FzgEdoH9YF8Z7xn9+qzeT4Az4DVwAbwDvqrfc8B7o/2dat0DDoHDwFHgMLBbGWwZ/fqc2DsF3htt7lTrLnAI7AL7wb4y3jP69Vm9nwBnwGvgAngHfFW/54D3Rvs71boHHAKHgaPAYWC3Mtgy+vU5sXcq/d7cqcZ94AjYA/aB/crw0OjXZ/V+ApwBr4EL4B3wVf2eA94b7e9U6x5wCBwGjgKHgd3KYMvo1+fE3qn0e3OnGveBI2AP2Af2K8NDo1+f1fsJcAa8Bi6Ad8BX9XsOeG+0v1Ote8AhcBg4ChwGdiuDLaNfnxN75z+I337vH5qk4QAAAABJRU5ErkJggg=="
 
 # --- HTML TEMPLATE ---
-# Uses {{ logo_path }} for Render compatibility
 html_template_string = """
 <!DOCTYPE html>
 <html>
@@ -132,12 +129,10 @@ html_template_string = """
 """
 
 # --- HELPER: Save Logo to Disk and Return PATH ---
-# Replaced base64 logic with File Path logic for Render stability
 def get_logo_path(uploaded_file):
     temp_filename = "temp_report_logo.png"
     abs_path = os.path.abspath(temp_filename)
 
-    # 1. User Upload (Priority)
     if uploaded_file is not None:
         try:
             with open(abs_path, "wb") as f:
@@ -146,11 +141,9 @@ def get_logo_path(uploaded_file):
         except Exception as e:
             print(f"Error saving uploaded logo: {e}")
 
-    # 2. Local File (Preferred)
     if os.path.exists(LOCAL_LOGO_FILENAME):
         return os.path.abspath(LOCAL_LOGO_FILENAME)
         
-    # 3. Fallback (Decode Base64 string to a file)
     try:
         if "base64," in FALLBACK_LOGO_B64:
             _, encoded = FALLBACK_LOGO_B64.split("base64,", 1)
@@ -201,9 +194,8 @@ def normalize_ai_output(data):
     data["tables"] = valid_tables
     return data
 
-def get_ai_structure(excel_file, api_key):
+def get_ai_structure(excel_file):
     all_sheets = pd.read_excel(excel_file, sheet_name=None, header=None)
-    
     master_tables = []
     final_report_title = "Consolidated Report"
     final_report_date = ""
@@ -245,20 +237,18 @@ def get_ai_structure(excel_file, api_key):
         {csv_text}
         """
         
-        # DEEPSEEK HEADERS
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
             "Content-Type": "application/json"
         }
         
         data = {
-            "model": MODEL_NAME, # deepseek-chat
+            "model": MODEL_NAME, 
             "messages": [{"role": "user", "content": prompt}],
             "stream": False
         }
         
         try:
-            # POST TO DEEPSEEK URL
             response = requests.post(DEEPSEEK_URL, headers=headers, json=data)
             
             if response.status_code == 200:
@@ -287,7 +277,6 @@ def get_ai_structure(excel_file, api_key):
     }
 
 def create_pdf(data_context, logo_path):
-    # Fixed: Using path instead of data for Render
     data_context['logo_path'] = logo_path
     template = Template(html_template_string)
     html_content = template.render(**data_context)
@@ -304,12 +293,16 @@ def create_pdf(data_context, logo_path):
 # --- STREAMLIT UI ---
 st.set_page_config(page_title="Professional Report Generator", page_icon="📄")
 
-st.title("📄 AI Report Generator (DeepSeek)")
+st.title("📄 AI Report Generator")
 st.markdown("Upload Excel, customize title, get a professional PDF.")
+
+# CHECK FOR API KEY AT STARTUP
+if not DEEPSEEK_API_KEY:
+    st.error("⚠️ Server Configuration Error: API Key not found. Please set DEEPSEEK_API_KEY in Render Environment Variables.")
+    st.stop()
 
 with st.sidebar:
     st.header("Report Settings")
-    
     
     st.markdown("---")
     st.subheader("Title Page Config")
@@ -339,44 +332,38 @@ if uploaded_file is not None:
         st.warning("Could not preview file.")
 
     if st.button("Generate Report", type="primary"):
-        if not api_key:
-            st.error("Please enter a DeepSeek API Key.")
-            st.stop()
-        else:
-            try:
-                uploaded_file.seek(0)
-                
-                with st.spinner("Processing Logo..."):
-                    # Use the file-path function for Render compatibility
-                    final_logo_path = get_logo_path(uploaded_logo)
-                
-                with st.spinner("AI is analyzing all sheets individually..."):
-                    structured_data = get_ai_structure(uploaded_file, api_key)
-                
-                if custom_title:
-                    structured_data["report_title"] = custom_title
-                if not structured_data.get("date"):
-                    structured_data["date"] = datetime.date.today().strftime("%Y-%m-%d")
+        try:
+            uploaded_file.seek(0)
+            
+            with st.spinner("Processing Logo..."):
+                final_logo_path = get_logo_path(uploaded_logo)
+            
+            with st.spinner("AI is analyzing all sheets individually..."):
+                structured_data = get_ai_structure(uploaded_file)
+            
+            if custom_title:
+                structured_data["report_title"] = custom_title
+            if not structured_data.get("date"):
+                structured_data["date"] = datetime.date.today().strftime("%Y-%m-%d")
 
-                if not structured_data["tables"]:
-                    st.warning("No valid data found in Excel.")
+            if not structured_data["tables"]:
+                st.warning("No valid data found in Excel.")
+                st.json(structured_data)
+            else:
+                with st.spinner("Rendering Title Page & PDF..."):
+                    pdf_bytes = create_pdf(structured_data, final_logo_path)
+                
+                st.success("Report generated successfully!")
+                
+                st.download_button(
+                    label="Download Professional PDF 📥",
+                    data=pdf_bytes,
+                    file_name=f"{custom_title.replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
+                
+                with st.expander("See JSON Data (Debug)"):
                     st.json(structured_data)
-                else:
-                    with st.spinner("Rendering Title Page & PDF..."):
-                        pdf_bytes = create_pdf(structured_data, final_logo_path)
-                    
-                    st.success("Report generated successfully!")
-                    
-                    st.download_button(
-                        label="Download Professional PDF 📥",
-                        data=pdf_bytes,
-                        file_name=f"{custom_title.replace(' ', '_')}.pdf",
-                        mime="application/pdf"
-                    )
-                    
-                    with st.expander("See JSON Data (Debug)"):
-                        st.json(structured_data)
 
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
