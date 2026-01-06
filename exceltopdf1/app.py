@@ -87,13 +87,13 @@ html_template_string = """
     <div class="title-page">
         <img src="{{ logo_path }}" class="logo"/>
         <h1 class="main-title">{{ report_title }}</h1>
-        <div class="sub-title">GENERATED REPORT | {{ date }}</div>
+
     </div>
 
     <table class="header-layout">
         <tr>
             <td class="header-left"><h1 class="page-header">{{ report_title }} (Details)</h1></td>
-            <td class="header-right">Generated via AI Reporter<br/>Date: {{ date }}</td>
+
         </tr>
     </table>
 
@@ -367,4 +367,5 @@ if uploaded_file is not None:
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
 
