@@ -1,0 +1,6 @@
+streamlit
+pandas
+requests
+jinja2
+xhtml2pdf==0.2.11
+openpyxl
